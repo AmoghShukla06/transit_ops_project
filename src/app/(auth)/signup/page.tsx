@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,10 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
       <Card className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
         <CardHeader>
-          <div className="mb-1 text-xl font-bold tracking-tight text-primary">TransitOps</div>
+          <div className="mb-1 flex items-center gap-2">
+            <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
+            <span className="text-xl font-bold tracking-tight text-primary">TransitOps</span>
+          </div>
           <CardTitle>Create your account</CardTitle>
           <CardDescription>Pick the role that matches your job</CardDescription>
         </CardHeader>

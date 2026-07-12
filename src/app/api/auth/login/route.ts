@@ -3,7 +3,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, setSession } from "@/lib/auth";
 
-const schema = z.object({ email: z.string().email(), password: z.string().min(1) });
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  rememberMe: z.boolean().optional(),
+});
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -11,7 +15,7 @@ const LOCK_MINUTES = 15;
 export async function POST(req: Request) {
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ detail: "Invalid input" }, { status: 400 });
-  const { email, password } = parsed.data;
+  const { email, password, rememberMe } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return NextResponse.json({ detail: "Invalid credentials" }, { status: 401 });
@@ -44,6 +48,9 @@ export async function POST(req: Request) {
     });
   }
 
-  await setSession({ sub: String(user.id), role: user.role, email: user.email, name: user.name });
+  await setSession(
+    { sub: String(user.id), role: user.role, email: user.email, name: user.name },
+    rememberMe,
+  );
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });
 }

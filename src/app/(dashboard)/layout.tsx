@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { can, type Module } from "@/lib/rbac";
@@ -34,10 +35,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <div className="flex min-h-screen">
       <Sidebar items={items} />
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-3 border-b bg-card/40 px-4 sm:px-6">
-          <MobileSidebar items={items} />
-          <span className="text-lg font-bold tracking-tight md:hidden">TransitOps</span>
-          <div className="flex items-center gap-3">
+        <header className="flex h-16 items-center gap-3 border-b bg-card/40 px-4 sm:px-6">
+          <div className="flex items-center gap-2 md:hidden">
+            <MobileSidebar items={items} />
+            <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-6 w-auto" />
+            <span className="text-lg font-bold tracking-tight">TransitOps</span>
+          </div>
+          <div className="ml-auto flex items-center gap-3">
             <ModeToggle />
             <UserMenu name={session.name} role={session.role} />
           </div>

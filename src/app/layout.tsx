@@ -12,6 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TransitOps",
   description: "Smart Transport Operations Platform",
+  icons: { icon: "/logo.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,8 @@
 /**
  * Fuel & Expense Management (mockup #6). Owner: Person D.
- * Fuel logs table + expenses table + auto total operational cost (Fuel + Maintenance).
- * Fetch /api/fuel-logs, /api/expenses.
+ * Fuel Logs table + Other Expenses table (stacked, always visible) + auto total
+ * operational cost (Fuel + Maintenance, per PDF §3.7 — tolls/misc are shown separately).
+ * Fetch /api/fuel-logs, /api/expenses, /api/analytics.
  */
 "use client";
 
@@ -12,10 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { Plus, Fuel, Receipt, DollarSign, TrendingUp } from "lucide-react";
+import { Plus } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -60,6 +59,10 @@ interface Vehicle {
 interface Trip {
   id: number;
   code: string;
+}
+
+interface AnalyticsSummary {
+  operationalCost: { fuelCost: number; maintCost: number; total: number };
 }
 
 // --------------- Zod schemas ---------------
@@ -108,10 +111,10 @@ export default function FuelExpensesPage() {
     queryFn: () => api("/trips"),
   });
 
-  // ---- Computed totals ----
-  const totalFuelCost = fuelLogs.reduce((sum, l) => sum + l.cost, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.toll + e.other, 0);
-  const totalLiters = fuelLogs.reduce((sum, l) => sum + l.liters, 0);
+  const { data: analytics } = useQuery<AnalyticsSummary>({
+    queryKey: ["analytics"],
+    queryFn: () => api("/analytics"),
+  });
 
   // ---- Fuel mutation ----
   const fuelForm = useForm<FuelFormData>({ resolver: zodResolver(fuelSchema) });
@@ -131,6 +134,7 @@ export default function FuelExpensesPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["fuel-logs"] });
+      qc.invalidateQueries({ queryKey: ["analytics"] });
       toast.success("Fuel log added");
       fuelForm.reset();
       setFuelOpen(false);
@@ -170,247 +174,199 @@ export default function FuelExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Fuel &amp; Expenses</h1>
-
-      {/* ---------- KPI Cards ---------- */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Fuel Cost</CardTitle>
-            <Fuel className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalFuelCost)}</div>
-            <p className="text-xs text-muted-foreground">{totalLiters.toFixed(1)} liters consumed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalExpenses)}</div>
-            <p className="text-xs text-muted-foreground">{expenses.length} records</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Operational Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalFuelCost + totalExpenses)}</div>
-            <p className="text-xs text-muted-foreground">Fuel + Tolls + Other</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg Cost / Log</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {fuelLogs.length > 0 ? fmt(totalFuelCost / fuelLogs.length) : "—"}
-            </div>
-            <p className="text-xs text-muted-foreground">{fuelLogs.length} fuel logs</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ---------- Tabs ---------- */}
-      <Tabs defaultValue="fuel" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="fuel">Fuel Logs</TabsTrigger>
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        </TabsList>
-
-        {/* ===== Fuel Logs Tab ===== */}
-        <TabsContent value="fuel" className="space-y-4">
-          <div className="flex justify-end">
-            <Dialog open={fuelOpen} onOpenChange={setFuelOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Add Fuel Log</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Add Fuel Log</DialogTitle></DialogHeader>
-                <form onSubmit={fuelForm.handleSubmit((d) => fuelMutation.mutate(d))} className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold">Fuel &amp; Expense Management</h1>
+        <div className="flex gap-2">
+          <Dialog open={fuelOpen} onOpenChange={setFuelOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Log Fuel</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Add Fuel Log</DialogTitle></DialogHeader>
+              <form onSubmit={fuelForm.handleSubmit((d) => fuelMutation.mutate(d))} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fuel-vehicle">Vehicle</Label>
+                  <Select onValueChange={(v) => fuelForm.setValue("vehicleId", v)}>
+                    <SelectTrigger id="fuel-vehicle"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                    <SelectContent>
+                      {vehicles.map((v) => (
+                        <SelectItem key={v.id} value={String(v.id)}>
+                          {v.regNo} — {v.nameModel}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fuelForm.formState.errors.vehicleId && (
+                    <p className="text-xs text-destructive">{fuelForm.formState.errors.vehicleId.message}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fuel-vehicle">Vehicle</Label>
-                    <Select onValueChange={(v) => fuelForm.setValue("vehicleId", v)}>
-                      <SelectTrigger id="fuel-vehicle"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((v) => (
-                          <SelectItem key={v.id} value={String(v.id)}>
-                            {v.regNo} — {v.nameModel}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fuelForm.formState.errors.vehicleId && (
-                      <p className="text-xs text-destructive">{fuelForm.formState.errors.vehicleId.message}</p>
+                    <Label htmlFor="fuel-liters">Liters</Label>
+                    <Input id="fuel-liters" type="number" step="0.1" {...fuelForm.register("liters")} />
+                    {fuelForm.formState.errors.liters && (
+                      <p className="text-xs text-destructive">{fuelForm.formState.errors.liters.message}</p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fuel-liters">Liters</Label>
-                      <Input id="fuel-liters" type="number" step="0.1" {...fuelForm.register("liters")} />
-                      {fuelForm.formState.errors.liters && (
-                        <p className="text-xs text-destructive">{fuelForm.formState.errors.liters.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fuel-cost">Cost (₹)</Label>
-                      <Input id="fuel-cost" type="number" step="0.01" {...fuelForm.register("cost")} />
-                      {fuelForm.formState.errors.cost && (
-                        <p className="text-xs text-destructive">{fuelForm.formState.errors.cost.message}</p>
-                      )}
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fuel-cost">Fuel Cost (₹)</Label>
+                    <Input id="fuel-cost" type="number" step="0.01" {...fuelForm.register("cost")} />
+                    {fuelForm.formState.errors.cost && (
+                      <p className="text-xs text-destructive">{fuelForm.formState.errors.cost.message}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fuel-date">Date (optional)</Label>
+                  <Input id="fuel-date" type="date" {...fuelForm.register("date")} />
+                </div>
+                <Button type="submit" className="w-full" disabled={fuelMutation.isPending}>
+                  {fuelMutation.isPending ? "Saving…" : "Save Fuel Log"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" /> Add Expense</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Record Expense</DialogTitle></DialogHeader>
+              <form onSubmit={expenseForm.handleSubmit((d) => expenseMutation.mutate(d))} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="exp-toll">Toll (₹)</Label>
+                    <Input id="exp-toll" type="number" step="0.01" defaultValue="0" {...expenseForm.register("toll")} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="fuel-date">Date (optional)</Label>
-                    <Input id="fuel-date" type="date" {...fuelForm.register("date")} />
+                    <Label htmlFor="exp-other">Other (₹)</Label>
+                    <Input id="exp-other" type="number" step="0.01" defaultValue="0" {...expenseForm.register("other")} />
                   </div>
-                  <Button type="submit" className="w-full" disabled={fuelMutation.isPending}>
-                    {fuelMutation.isPending ? "Saving…" : "Save Fuel Log"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="exp-trip">Trip (optional)</Label>
+                  <Select onValueChange={(v) => expenseForm.setValue("tripId", v)}>
+                    <SelectTrigger id="exp-trip"><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectContent>
+                      {trips.map((t) => (
+                        <SelectItem key={t.id} value={String(t.id)}>
+                          {t.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="exp-vehicle">Vehicle (optional)</Label>
+                  <Select onValueChange={(v) => expenseForm.setValue("vehicleId", v)}>
+                    <SelectTrigger id="exp-vehicle"><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectContent>
+                      {vehicles.map((v) => (
+                        <SelectItem key={v.id} value={String(v.id)}>
+                          {v.regNo} — {v.nameModel}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={expenseMutation.isPending}>
+                  {expenseMutation.isPending ? "Saving…" : "Save Expense"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
+      {/* ===== Fuel Logs ===== */}
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Fuel Logs</h2>
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vehicle</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Liters</TableHead>
+                <TableHead className="text-right">Fuel Cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingFuel ? (
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead className="text-right">Liters</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingFuel ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
-                  </TableRow>
-                ) : fuelLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No fuel logs yet.</TableCell>
-                  </TableRow>
-                ) : (
-                  fuelLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{fmtDate(log.date)}</TableCell>
-                      <TableCell>
-                        <span className="font-medium">{log.vehicle.regNo}</span>
-                        <span className="ml-1 text-muted-foreground text-xs">{log.vehicle.nameModel}</span>
-                      </TableCell>
-                      <TableCell className="text-right">{log.liters.toFixed(1)}</TableCell>
-                      <TableCell className="text-right font-medium">{fmt(log.cost)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-
-        {/* ===== Expenses Tab ===== */}
-        <TabsContent value="expenses" className="space-y-4">
-          <div className="flex justify-end">
-            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Add Expense</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Record Expense</DialogTitle></DialogHeader>
-                <form onSubmit={expenseForm.handleSubmit((d) => expenseMutation.mutate(d))} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="exp-toll">Toll (₹)</Label>
-                      <Input id="exp-toll" type="number" step="0.01" defaultValue="0" {...expenseForm.register("toll")} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="exp-other">Other (₹)</Label>
-                      <Input id="exp-other" type="number" step="0.01" defaultValue="0" {...expenseForm.register("other")} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-trip">Trip (optional)</Label>
-                    <Select onValueChange={(v) => expenseForm.setValue("tripId", v)}>
-                      <SelectTrigger id="exp-trip"><SelectValue placeholder="None" /></SelectTrigger>
-                      <SelectContent>
-                        {trips.map((t) => (
-                          <SelectItem key={t.id} value={String(t.id)}>
-                            {t.code}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-vehicle">Vehicle (optional)</Label>
-                    <Select onValueChange={(v) => expenseForm.setValue("vehicleId", v)}>
-                      <SelectTrigger id="exp-vehicle"><SelectValue placeholder="None" /></SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((v) => (
-                          <SelectItem key={v.id} value={String(v.id)}>
-                            {v.regNo} — {v.nameModel}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={expenseMutation.isPending}>
-                    {expenseMutation.isPending ? "Saving…" : "Save Expense"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
+              ) : fuelLogs.length === 0 ? (
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Toll</TableHead>
-                  <TableHead className="text-right">Other</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Trip</TableHead>
-                  <TableHead>Vehicle</TableHead>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No fuel logs yet.</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingExpenses ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
+              ) : (
+                fuelLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell>
+                      <span className="font-medium">{log.vehicle.regNo}</span>
+                      <span className="ml-1 text-muted-foreground text-xs">{log.vehicle.nameModel}</span>
+                    </TableCell>
+                    <TableCell>{fmtDate(log.date)}</TableCell>
+                    <TableCell className="text-right">{log.liters.toFixed(1)} L</TableCell>
+                    <TableCell className="text-right font-medium">{fmt(log.cost)}</TableCell>
                   </TableRow>
-                ) : expenses.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No expenses yet.</TableCell>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* ===== Other Expenses ===== */}
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Other Expenses (Toll / Misc)</h2>
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Trip</TableHead>
+                <TableHead>Vehicle</TableHead>
+                <TableHead className="text-right">Toll</TableHead>
+                <TableHead className="text-right">Other</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingExpenses ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
+                </TableRow>
+              ) : expenses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No expenses yet.</TableCell>
+                </TableRow>
+              ) : (
+                expenses.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{e.trip?.code ?? "—"}</TableCell>
+                    <TableCell>{e.vehicle?.regNo ?? "—"}</TableCell>
+                    <TableCell className="text-right">{fmt(e.toll)}</TableCell>
+                    <TableCell className="text-right">{fmt(e.other)}</TableCell>
+                    <TableCell className="text-right font-medium">{fmt(e.toll + e.other)}</TableCell>
                   </TableRow>
-                ) : (
-                  expenses.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{fmtDate(e.createdAt)}</TableCell>
-                      <TableCell className="text-right">{fmt(e.toll)}</TableCell>
-                      <TableCell className="text-right">{fmt(e.other)}</TableCell>
-                      <TableCell className="text-right font-medium">{fmt(e.toll + e.other)}</TableCell>
-                      <TableCell>{e.trip?.code ?? "—"}</TableCell>
-                      <TableCell>{e.vehicle?.regNo ?? "—"}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* ===== Total Operational Cost ===== */}
+      <div className="flex items-center justify-between border-t pt-4">
+        <span className="text-sm font-medium text-muted-foreground">
+          Total Operational Cost (Auto) = Fuel + Maintenance
+        </span>
+        <span className="text-xl font-bold text-orange-500">
+          {fmt(analytics?.operationalCost.total ?? 0)}
+        </span>
+      </div>
     </div>
   );
 }

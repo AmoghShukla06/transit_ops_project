@@ -14,6 +14,7 @@ import {
 import {
   Gauge, Fuel, DollarSign, Download, FileText, TrendingUp,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,9 @@ export default function AnalyticsPage() {
     fuel: v.fuelCost,
     maintenance: v.maintCost,
   }));
+
+  const roiList = data?.vehicleRoi ?? [];
+  const avgRoi = roiList.length > 0 ? roiList.reduce((s, v) => s + v.roi, 0) / roiList.length : 0;
 
   if (isLoading) {
     return (
@@ -160,17 +164,20 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Vehicle ROI</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {fmt(revenueChartData.reduce((s, r) => s + r.revenue, 0))}
+            <div className={cn("text-2xl font-bold", avgRoi >= 0 ? "text-emerald-500" : "text-destructive")}>
+              {avgRoi.toFixed(2)}%
             </div>
-            <p className="text-xs text-muted-foreground">Last {revenueChartData.length} months</p>
+            <p className="text-xs text-muted-foreground">Fleet average, all vehicles</p>
           </CardContent>
         </Card>
       </div>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        ROI = (Revenue − (Maintenance + Fuel)) / Acquisition Cost
+      </p>
 
       {/* ---------- Charts ---------- */}
       <div className="grid gap-6 lg:grid-cols-2">

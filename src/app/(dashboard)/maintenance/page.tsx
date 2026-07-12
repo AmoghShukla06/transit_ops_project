@@ -1,17 +1,16 @@
 /**
  * Maintenance (mockup #5, PDF §3.6). Owner: Person B.
- * "Log Service Record" form + service log table. Creating an active record flips the
- * vehicle to In Shop (hidden from dispatch); closing restores it to Available.
+ * Inline "Log Service Record" form (left) + Service Log table (right). Creating an active
+ * record flips the vehicle to In Shop (hidden from dispatch); closing restores it to Available.
  */
 "use client";
 
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Wrench } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -55,7 +51,6 @@ type FormValues = z.input<typeof schema>;
 
 export default function MaintenancePage() {
   const qc = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: logs = [], isLoading } = useQuery<MaintenanceLog[]>({
     queryKey: ["maintenance"],
@@ -94,7 +89,6 @@ export default function MaintenancePage() {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
       toast.success("Service record logged — vehicle moved to In Shop");
       form.reset();
-      setIsDialogOpen(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -112,25 +106,21 @@ export default function MaintenancePage() {
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-  const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-
-  const activeCount = logs.filter((l) => l.status === "active").length;
-  const totalCost = logs.reduce((s, l) => s + l.cost, 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Maintenance</h1>
-          <p className="text-sm text-muted-foreground">Log service records and track vehicles in the shop.</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) form.reset(); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-1 h-4 w-4" /> Log Service Record</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Log Service Record</DialogTitle></DialogHeader>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Maintenance</h1>
+        <p className="text-sm text-muted-foreground">Log service records and track vehicles in the shop.</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        {/* Log Service Record */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Log Service Record</CardTitle>
+          </CardHeader>
+          <CardContent>
             <form onSubmit={form.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
               <div className="space-y-2">
                 <Label>Vehicle</Label>
@@ -160,99 +150,94 @@ export default function MaintenancePage() {
                 <Label>Date</Label>
                 <Input type="date" {...form.register("date")} />
               </div>
-              <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending} className="w-full">
-                  {createMutation.isPending ? "Saving…" : "Save"}
-                </Button>
-              </DialogFooter>
+              <Button type="submit" disabled={createMutation.isPending} className="w-full">
+                {createMutation.isPending ? "Saving…" : "Save"}
+              </Button>
             </form>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Vehicles In Shop</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCount}</div>
-            <p className="text-xs text-muted-foreground">Active maintenance records</p>
+            {/* Status flow diagram */}
+            <div className="mt-6 space-y-2 border-t pt-4 text-xs">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-green-500/10 text-green-500">Available</Badge>
+                <span className="text-muted-foreground">— creating active record —</span>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <Badge variant="secondary" className="bg-orange-500/10 text-orange-500">In Shop</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-orange-500/10 text-orange-500">In Shop</Badge>
+                <span className="text-muted-foreground">— closing record —</span>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <Badge variant="secondary" className="bg-green-500/10 text-green-500">Available</Badge>
+              </div>
+              <p className="pt-1 text-muted-foreground">
+                Note: In Shop vehicles are removed from the dispatch pool.
+              </p>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Service Log */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Maintenance Cost</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-base">Service Log</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalCost)}</div>
-            <p className="text-xs text-muted-foreground">{logs.length} records total</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Cost</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center">Loading…</TableCell></TableRow>
-            ) : logs.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No service records yet.</TableCell></TableRow>
-            ) : (
-              logs.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium">
-                    {l.vehicle.regNo}
-                    <div className="text-xs text-muted-foreground">{l.vehicle.nameModel}</div>
-                  </TableCell>
-                  <TableCell>{l.serviceType}</TableCell>
-                  <TableCell>{fmt(l.cost)}</TableCell>
-                  <TableCell>{fmtDate(l.date)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        l.status === "active"
-                          ? "bg-orange-500/10 text-orange-500"
-                          : "bg-green-500/10 text-green-500"
-                      }
-                    >
-                      {l.status === "active" ? "In Shop" : "Completed"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {l.status === "active" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={closeMutation.isPending}
-                        onClick={() => closeMutation.mutate(l.id)}
-                      >
-                        Close
-                      </Button>
-                    )}
-                  </TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Cost</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center">Loading…</TableCell></TableRow>
+                ) : logs.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No service records yet.</TableCell></TableRow>
+                ) : (
+                  logs.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">
+                        {l.vehicle.regNo}
+                        <div className="text-xs font-normal text-muted-foreground">{l.vehicle.nameModel}</div>
+                      </TableCell>
+                      <TableCell>{l.serviceType}</TableCell>
+                      <TableCell>{fmt(l.cost)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            l.status === "active"
+                              ? "bg-orange-500/10 text-orange-500"
+                              : "bg-green-500/10 text-green-500"
+                          }
+                        >
+                          {l.status === "active" ? "In Shop" : "Completed"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {l.status === "active" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={closeMutation.isPending}
+                            onClick={() => closeMutation.mutate(l.id)}
+                          >
+                            Close
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Note: In Shop vehicles are removed from the Trip Dispatcher&apos;s selection pool.
-      </p>
     </div>
   );
 }

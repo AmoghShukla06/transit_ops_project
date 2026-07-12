@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,10 @@ export function SidebarNav({ items, onNavigate }: { items: NavItem[]; onNavigate
 export function Sidebar({ items }: { items: NavItem[] }) {
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r bg-card/40 p-4 md:flex">
-      <div className="mb-6 px-2 text-xl font-bold tracking-tight">TransitOps</div>
+      <div className="mb-6 flex items-center gap-2 px-2">
+        <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
+        <span className="text-xl font-bold tracking-tight">TransitOps</span>
+      </div>
       <SidebarNav items={items} />
     </aside>
   );

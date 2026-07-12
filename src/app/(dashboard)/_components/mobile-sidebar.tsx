@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarNav, type NavItem } from "./sidebar";
@@ -37,7 +38,10 @@ export function MobileSidebar({ items }: { items: NavItem[] }) {
           />
           <aside className="absolute left-0 top-0 flex h-full w-64 animate-in slide-in-from-left flex-col border-r bg-card p-4 duration-300 ease-out">
             <div className="mb-6 flex items-center justify-between px-2">
-              <span className="text-xl font-bold tracking-tight">TransitOps</span>
+              <div className="flex items-center gap-2">
+                <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
+                <span className="text-xl font-bold tracking-tight">TransitOps</span>
+              </div>
               <Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>

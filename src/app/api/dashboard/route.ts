@@ -32,11 +32,12 @@ export async function GET(req: Request) {
       ? Promise.resolve(0)
       : prisma.vehicle.count({ where: { ...vehicleBase, status: specific } });
 
-  const [available, inShop, onTrip, activeTrips, pendingTrips, driversOnDuty, total] =
+  const [available, inShop, onTrip, retired, activeTrips, pendingTrips, driversOnDuty, total] =
     await Promise.all([
       countByStatus("available"),
       countByStatus("in_shop"),
       countByStatus("on_trip"),
+      countByStatus("retired"),
       prisma.trip.count({ where: { status: "dispatched", vehicle: region ? { region } : undefined } }),
       prisma.trip.count({ where: { status: "draft", vehicle: region ? { region } : undefined } }),
       prisma.driver.count({ where: { status: "on_trip" } }),
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
     activeVehicles: onTrip,
     availableVehicles: available,
     vehiclesInMaintenance: inShop,
+    retiredVehicles: retired,
     activeTrips,
     pendingTrips,
     driversOnDuty,

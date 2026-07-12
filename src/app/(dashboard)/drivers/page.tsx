@@ -97,6 +97,19 @@ export default function DriversPage() {
     }
   };
 
+  const getSafetyColor = (score: number) => {
+    if (score >= 90) return "bg-green-500/10 text-green-500";
+    if (score >= 70) return "bg-orange-500/10 text-orange-500";
+    return "bg-red-500/10 text-red-500";
+  };
+
+  const STATUS_LEGEND = [
+    { label: "Available", className: "bg-green-500/10 text-green-500" },
+    { label: "On Trip", className: "bg-blue-500/10 text-blue-500" },
+    { label: "Off Duty", className: "bg-gray-500/10 text-gray-500" },
+    { label: "Suspended", className: "bg-red-500/10 text-red-500" },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -153,30 +166,28 @@ export default function DriversPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Driver</TableHead>
-              <TableHead>License</TableHead>
+              <TableHead>License No.</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Expiry</TableHead>
-              <TableHead>Score</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Safety</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>
             ) : drivers?.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No drivers found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No drivers found.</TableCell></TableRow>
             ) : (
               drivers?.map((d) => {
                 const isExpired = new Date(d.licenseExpiry) < new Date();
                 return (
                   <TableRow key={d.id}>
-                    <TableCell className="font-medium">
-                      {d.name}
-                      <div className="text-xs text-muted-foreground">{d.contact}</div>
-                    </TableCell>
-                    <TableCell>
-                      {d.licenseNo} <span className="text-muted-foreground text-xs">({d.licenseCategory})</span>
-                    </TableCell>
+                    <TableCell className="font-medium">{d.name}</TableCell>
+                    <TableCell>{d.licenseNo}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.licenseCategory}</TableCell>
                     <TableCell>
                       {isExpired ? (
                         <Badge variant="destructive">EXPIRED</Badge>
@@ -184,7 +195,12 @@ export default function DriversPage() {
                         new Date(d.licenseExpiry).toLocaleDateString()
                       )}
                     </TableCell>
-                    <TableCell>{d.safetyScore}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.contact ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={getSafetyColor(d.safetyScore)}>
+                        {d.safetyScore}%
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Select value={d.status} onValueChange={(val) => statusMutation.mutate({ id: d.id, status: val })}>
                         <SelectTrigger className={`w-[130px] h-8 text-xs font-medium border-0 ${getStatusColor(d.status)}`}>
@@ -208,6 +224,16 @@ export default function DriversPage() {
           </TableBody>
         </Table>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Status:</span>
+        {STATUS_LEGEND.map((s) => (
+          <Badge key={s.label} variant="secondary" className={s.className}>{s.label}</Badge>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Rule: Expired license or Suspended status → blocked from trip assignment.
+      </p>
     </div>
   );
 }
