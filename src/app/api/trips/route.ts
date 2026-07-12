@@ -18,9 +18,46 @@ export async function GET() {
   return NextResponse.json(trips);
 }
 
-export async function POST() {
+import { z } from "zod";
+
+const createTripSchema = z.object({
+  source: z.string().min(1, "Source is required"),
+  destination: z.string().min(1, "Destination is required"),
+  vehicleId: z.number().nullable().optional(),
+  driverId: z.number().nullable().optional(),
+  cargoWeightKg: z.number().min(0, "Cargo weight must be positive"),
+  plannedDistance: z.number().min(0, "Planned distance must be positive"),
+});
+
+export async function POST(req: Request) {
   const guard = await requireAccess("trips", "edit");
   if (guard instanceof NextResponse) return guard;
-  // TODO(Person C): zod-validate + create draft trip. Auto-generate `code` (TR001...).
-  return NextResponse.json({ detail: "Not implemented" }, { status: 501 });
+  
+  try {
+    const body = await req.json();
+    const data = createTripSchema.parse(body);
+
+    const lastTrip = await prisma.trip.findFirst({ orderBy: { id: "desc" } });
+    const nextId = lastTrip ? lastTrip.id + 1 : 1;
+    const code = `TR${String(nextId).padStart(3, "0")}`;
+
+    const trip = await prisma.trip.create({
+      data: {
+        code,
+        source: data.source,
+        destination: data.destination,
+        vehicleId: data.vehicleId,
+        driverId: data.driverId,
+        cargoWeightKg: data.cargoWeightKg,
+        plannedDistance: data.plannedDistance,
+        status: "draft",
+      },
+    });
+    return NextResponse.json(trip, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ detail: error.errors[0].message }, { status: 400 });
+    }
+    return NextResponse.json({ detail: "Failed to create trip" }, { status: 500 });
+  }
 }
