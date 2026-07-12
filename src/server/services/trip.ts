@@ -5,10 +5,9 @@
  * Owner: Person C. Import these from the /api/trips route handlers.
  */
 import { prisma } from "@/lib/prisma";
+import { RuleError } from "@/server/services/errors";
 
-export class RuleError extends Error {
-  status = 400;
-}
+export { RuleError };
 
 /** Vehicles selectable for dispatch: never retired/in_shop/on_trip. */
 export function dispatchableVehicles() {
