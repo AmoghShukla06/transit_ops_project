@@ -5,10 +5,32 @@
  */
 import { NextResponse } from "next/server";
 import { requireAccess } from "@/lib/rbac";
+import {
+  fleetUtilization,
+  fuelEfficiency,
+  topCostliestVehicles,
+  monthlyRevenue,
+  totalOperationalCost,
+} from "@/server/services/cost";
 
 export async function GET() {
   const guard = await requireAccess("analytics", "view");
   if (guard instanceof NextResponse) return guard;
-  // TODO(Person D): compute metrics via cost service and return.
-  return NextResponse.json({ detail: "Not implemented" }, { status: 501 });
+
+  const [utilization, efficiency, costliest, revenue, opCost] = await Promise.all([
+    fleetUtilization(),
+    fuelEfficiency(),
+    topCostliestVehicles(5),
+    monthlyRevenue(6),
+    totalOperationalCost(),
+  ]);
+
+  return NextResponse.json({
+    fleetUtilization: utilization,
+    fuelEfficiency: efficiency.overall,
+    fuelEfficiencyPerVehicle: efficiency.perVehicle,
+    operationalCost: opCost,
+    monthlyRevenue: revenue,
+    topCostliestVehicles: costliest,
+  });
 }
