@@ -1,23 +1,61 @@
 /**
  * App settings + RBAC matrix. Owner: Person A.
- * GET returns general settings (depot, currency, distance unit) + the RBAC matrix for display.
+ * GET  -> general settings (depot, currency, distance unit) + the RBAC matrix for display.
+ * PATCH -> persist general settings (Fleet Manager only) into the Setting key/value table.
  */
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/rbac";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { RBAC } from "@/lib/rbac";
 
+const DEFAULT_SETTINGS: Record<string, string> = {
+  depotName: "Gandhinagar Depot GJ4",
+  currency: "INR",
+  distanceUnit: "Kilometers",
+};
+
 export async function GET() {
-  const guard = await requireAuth();
-  if (guard instanceof NextResponse) return guard;
-  return NextResponse.json({
-    general: { depotName: "Gandhinagar Depot GJ4", currency: "INR", distanceUnit: "Kilometers" },
-    rbac: RBAC,
-  });
+  const session = await getSession();
+  if (!session) return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
+
+  const rows = await prisma.setting.findMany();
+  const general = { ...DEFAULT_SETTINGS };
+  for (const row of rows) {
+    if (row.key in general) general[row.key] = row.value;
+  }
+
+  return NextResponse.json({ general, rbac: RBAC, canEdit: session.role === "fleet_manager" });
 }
 
-export async function PATCH() {
-  const guard = await requireAuth();
-  if (guard instanceof NextResponse) return guard;
-  // TODO(Person A): persist general settings (add a Settings model or a key/value table).
-  return NextResponse.json({ detail: "Not implemented" }, { status: 501 });
+const patchSchema = z.object({
+  depotName: z.string().min(1).optional(),
+  currency: z.string().min(1).optional(),
+  distanceUnit: z.string().min(1).optional(),
+});
+
+export async function PATCH(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
+  if (session.role !== "fleet_manager") {
+    return NextResponse.json({ detail: "Only a Fleet Manager can change settings" }, { status: 403 });
+  }
+
+  const parsed = patchSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ detail: "Invalid input" }, { status: 400 });
+
+  await Promise.all(
+    Object.entries(parsed.data).map(([key, value]) =>
+      prisma.setting.upsert({
+        where: { key },
+        update: { value: value as string },
+        create: { key, value: value as string },
+      }),
+    ),
+  );
+
+  const rows = await prisma.setting.findMany();
+  const general = { ...DEFAULT_SETTINGS };
+  for (const row of rows) if (row.key in general) general[row.key] = row.value;
+  return NextResponse.json({ general });
 }

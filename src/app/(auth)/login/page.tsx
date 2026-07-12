@@ -4,10 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /**
- * Login screen (mockup #0). Owner: Person A — replace the plain inputs with shadcn
- * <Card>/<Input>/<Button>/<Select> and add the role dropdown + "remember me".
+ * Login screen (mockup #0). Email + password only — the user's role comes from their
+ * account (chosen at signup), so there is no role picker here by design.
  */
 export default function LoginPage() {
   const router = useRouter();
@@ -32,43 +42,53 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-lg border p-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Sign in to TransitOps</h1>
-          <p className="text-sm text-muted-foreground">Enter your credentials to continue</p>
-        </div>
-        <input
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p className="text-sm text-destructive">✕ {error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {loading ? "Signing in…" : "Sign In"}
-        </button>
-        <p className="text-center text-sm text-muted-foreground">
-          No account?{" "}
-          <Link href="/signup" className="underline">
-            Sign up
-          </Link>
-        </p>
-      </form>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <div className="mb-1 text-xl font-bold tracking-tight">TransitOps</div>
+          <CardTitle>Sign in to your account</CardTitle>
+          <CardDescription>Enter your credentials to continue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@transitops.in"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error && (
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                ✕ {error}
+              </p>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in…" : "Sign In"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              No account?{" "}
+              <Link href="/signup" className="font-medium text-foreground underline">
+                Sign up
+              </Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,39 +1,48 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { can, type Module } from "@/lib/rbac";
+import { Sidebar, type NavItem } from "./_components/sidebar";
+import { ModeToggle } from "./_components/mode-toggle";
+import { UserMenu } from "./_components/user-menu";
 
-/**
- * Dashboard shell: sidebar + top bar. Owner: Person A (wire role-based nav visibility +
- * current-user chip + dark-mode toggle). Nav items map to the mockup's sidebar.
- */
-const NAV = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/fleet", label: "Fleet" },
-  { href: "/drivers", label: "Drivers" },
-  { href: "/trips", label: "Trips" },
-  { href: "/maintenance", label: "Maintenance" },
-  { href: "/fuel-expenses", label: "Fuel & Expenses" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/settings", label: "Settings" },
+// Nav item + the RBAC module gating its visibility (null = visible to all authenticated users).
+const NAV: { href: string; label: string; module: Module | null }[] = [
+  { href: "/dashboard", label: "Dashboard", module: null },
+  { href: "/fleet", label: "Fleet", module: "fleet" },
+  { href: "/drivers", label: "Drivers", module: "drivers" },
+  { href: "/trips", label: "Trips", module: "trips" },
+  { href: "/maintenance", label: "Maintenance", module: "fleet" }, // maintenance is a fleet concern
+  { href: "/fuel-expenses", label: "Fuel & Expenses", module: "fuel" },
+  { href: "/analytics", label: "Analytics", module: "analytics" },
+  { href: "/settings", label: "Settings", module: null },
 ];
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (!session) redirect("/login"); // middleware also guards, but this narrows the type
+
+  const user = await prisma.user.findUnique({
+    where: { id: Number(session.sub) },
+    select: { name: true, role: true },
+  });
+  if (!user) redirect("/login");
+
+  const items: NavItem[] = NAV.filter(
+    (item) => item.module === null || can(user.role, item.module, "view"),
+  ).map(({ href, label }) => ({ href, label }));
+
   return (
     <div className="flex min-h-screen">
-      <aside className="w-56 shrink-0 border-r p-4">
-        <div className="mb-6 text-xl font-semibold">TransitOps</div>
-        <nav className="space-y-1">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <main className="flex-1 p-6">{children}</main>
+      <Sidebar items={items} />
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-16 items-center justify-end gap-3 border-b px-6">
+          <ModeToggle />
+          <UserMenu name={user.name} role={user.role} />
+        </header>
+        <main className="flex-1 p-6">{children}</main>
+      </div>
     </div>
   );
 }

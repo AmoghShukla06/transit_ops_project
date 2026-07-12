@@ -4,7 +4,9 @@
  * - Closing maintenance -> vehicle back to available (unless retired).
  */
 import { prisma } from "@/lib/prisma";
-import { RuleError } from "@/server/services/trip";
+import { RuleError } from "@/server/services/errors";
+
+export { RuleError };
 
 export async function createMaintenance(input: {
   vehicleId: number;

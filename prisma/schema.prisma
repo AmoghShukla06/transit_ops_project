@@ -53,6 +53,12 @@ model Role {
   description String?
 }
 
+// Simple key/value store for org-level settings (depot, currency, distance unit).
+model Setting {
+  key   String @id
+  value String
+}
+
 model User {
   id             Int       @id @default(autoincrement())
   name           String
