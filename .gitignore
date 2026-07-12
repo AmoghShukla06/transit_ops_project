@@ -38,3 +38,7 @@ scratchpad/
 
 # ---------- Internal docs ----------
 build_plan.md
+
+#---Uploaded docs by drivers 
+public/uploads/
+cookies.txt
