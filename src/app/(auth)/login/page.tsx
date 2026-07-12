@@ -43,9 +43,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
         <CardHeader>
-          <div className="mb-1 text-xl font-bold tracking-tight">TransitOps</div>
+          <div className="mb-1 text-xl font-bold tracking-tight text-primary">TransitOps</div>
           <CardTitle>Sign in to your account</CardTitle>
           <CardDescription>Enter your credentials to continue</CardDescription>
         </CardHeader>
@@ -73,7 +73,7 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="animate-in fade-in slide-in-from-top-1 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-200">
                 ✕ {error}
               </p>
             )}

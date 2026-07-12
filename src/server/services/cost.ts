@@ -8,8 +8,24 @@
  */
 import { prisma } from "@/lib/prisma";
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Fuel + maintenance cost summed per vehicle, in exactly two grouped queries
+ * (instead of two queries *per vehicle*). Returns maps keyed by vehicleId.
+ */
+async function costMapsByVehicle() {
+  const [fuelByV, maintByV] = await Promise.all([
+    prisma.fuelLog.groupBy({ by: ["vehicleId"], _sum: { cost: true } }),
+    prisma.maintenanceLog.groupBy({ by: ["vehicleId"], _sum: { cost: true } }),
+  ]);
+  const fuel = new Map(fuelByV.map((r) => [r.vehicleId, r._sum.cost ?? 0]));
+  const maint = new Map(maintByV.map((r) => [r.vehicleId, r._sum.cost ?? 0]));
+  return { fuel, maint };
+}
+
 /* ------------------------------------------------------------------ */
-/*  Operational cost per vehicle (already implemented)                 */
+/*  Operational cost per vehicle                                       */
 /* ------------------------------------------------------------------ */
 
 export async function operationalCostByVehicle(vehicleId: number) {
@@ -39,37 +55,38 @@ export async function fleetUtilization() {
 /* ------------------------------------------------------------------ */
 
 export async function fuelEfficiency() {
-  const completedTrips = await prisma.trip.aggregate({
-    where: { status: "completed", fuelConsumed: { gt: 0 } },
-    _sum: { plannedDistance: true, fuelConsumed: true },
-  });
-
-  const totalDistance = completedTrips._sum.plannedDistance ?? 0;
-  const totalFuel = completedTrips._sum.fuelConsumed ?? 0;
-  const overall = totalFuel > 0 ? Math.round((totalDistance / totalFuel) * 100) / 100 : 0;
-
-  // Per-vehicle breakdown
-  const vehicles = await prisma.vehicle.findMany({
-    where: { NOT: { status: "retired" } },
-    select: { id: true, regNo: true, nameModel: true },
-  });
-
-  const perVehicle = await Promise.all(
-    vehicles.map(async (v) => {
-      const agg = await prisma.trip.aggregate({
-        where: { vehicleId: v.id, status: "completed", fuelConsumed: { gt: 0 } },
-        _sum: { plannedDistance: true, fuelConsumed: true },
-      });
-      const dist = agg._sum.plannedDistance ?? 0;
-      const fuel = agg._sum.fuelConsumed ?? 0;
-      return {
-        vehicleId: v.id,
-        regNo: v.regNo,
-        nameModel: v.nameModel,
-        efficiency: fuel > 0 ? Math.round((dist / fuel) * 100) / 100 : 0,
-      };
+  const [overallAgg, perVehicleAgg, vehicles] = await Promise.all([
+    prisma.trip.aggregate({
+      where: { status: "completed", fuelConsumed: { gt: 0 } },
+      _sum: { plannedDistance: true, fuelConsumed: true },
     }),
-  );
+    prisma.trip.groupBy({
+      by: ["vehicleId"],
+      where: { status: "completed", fuelConsumed: { gt: 0 } },
+      _sum: { plannedDistance: true, fuelConsumed: true },
+    }),
+    prisma.vehicle.findMany({
+      where: { NOT: { status: "retired" } },
+      select: { id: true, regNo: true, nameModel: true },
+    }),
+  ]);
+
+  const totalDistance = overallAgg._sum.plannedDistance ?? 0;
+  const totalFuel = overallAgg._sum.fuelConsumed ?? 0;
+  const overall = totalFuel > 0 ? round2(totalDistance / totalFuel) : 0;
+
+  const effByV = new Map(perVehicleAgg.map((r) => [r.vehicleId, r._sum]));
+  const perVehicle = vehicles.map((v) => {
+    const agg = effByV.get(v.id);
+    const dist = agg?.plannedDistance ?? 0;
+    const fuel = agg?.fuelConsumed ?? 0;
+    return {
+      vehicleId: v.id,
+      regNo: v.regNo,
+      nameModel: v.nameModel,
+      efficiency: fuel > 0 ? round2(dist / fuel) : 0,
+    };
+  });
 
   return { overall, perVehicle };
 }
@@ -94,23 +111,70 @@ export async function vehicleRoi(vehicleId: number) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Vehicle ROI — fleet-wide list (PDF 3.8 requires ROI on Reports)     */
+/* ------------------------------------------------------------------ */
+
+export async function vehicleRoiList() {
+  const [vehicles, revByV, costs] = await Promise.all([
+    prisma.vehicle.findMany({
+      where: { NOT: { status: "retired" } },
+      select: { id: true, regNo: true, nameModel: true, acquisitionCost: true },
+    }),
+    prisma.trip.groupBy({
+      by: ["vehicleId"],
+      where: { status: "completed" },
+      _sum: { revenue: true },
+    }),
+    costMapsByVehicle(),
+  ]);
+
+  const revenueMap = new Map(revByV.map((r) => [r.vehicleId, r._sum.revenue ?? 0]));
+
+  return vehicles.map((v) => {
+    const revenue = revenueMap.get(v.id) ?? 0;
+    const operationalCost = (costs.fuel.get(v.id) ?? 0) + (costs.maint.get(v.id) ?? 0);
+    const roi =
+      v.acquisitionCost > 0 ? round2(((revenue - operationalCost) / v.acquisitionCost) * 100) : 0;
+    return {
+      vehicleId: v.id,
+      regNo: v.regNo,
+      nameModel: v.nameModel,
+      revenue,
+      operationalCost,
+      acquisitionCost: v.acquisitionCost,
+      roi,
+    };
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /*  Top costliest vehicles                                             */
 /* ------------------------------------------------------------------ */
 
 export async function topCostliestVehicles(limit = 5) {
-  const vehicles = await prisma.vehicle.findMany({
-    where: { NOT: { status: "retired" } },
-    select: { id: true, regNo: true, nameModel: true },
-  });
-
-  const withCosts = await Promise.all(
-    vehicles.map(async (v) => {
-      const cost = await operationalCostByVehicle(v.id);
-      return { vehicleId: v.id, regNo: v.regNo, nameModel: v.nameModel, ...cost };
+  const [vehicles, costs] = await Promise.all([
+    prisma.vehicle.findMany({
+      where: { NOT: { status: "retired" } },
+      select: { id: true, regNo: true, nameModel: true },
     }),
-  );
+    costMapsByVehicle(),
+  ]);
 
-  return withCosts.sort((a, b) => b.total - a.total).slice(0, limit);
+  return vehicles
+    .map((v) => {
+      const fuelCost = costs.fuel.get(v.id) ?? 0;
+      const maintCost = costs.maint.get(v.id) ?? 0;
+      return {
+        vehicleId: v.id,
+        regNo: v.regNo,
+        nameModel: v.nameModel,
+        fuelCost,
+        maintCost,
+        total: fuelCost + maintCost,
+      };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, limit);
 }
 
 /* ------------------------------------------------------------------ */
@@ -131,7 +195,7 @@ export async function monthlyRevenue(months = 6): Promise<MonthlyRow[]> {
       COALESCE(SUM("revenue"), 0)::float   AS revenue
     FROM "Trip"
     WHERE "status" = 'completed'
-      AND "createdAt" >= NOW() - INTERVAL '${months} months'
+      AND "createdAt" >= NOW() - make_interval(months => ${months}::int)
     GROUP BY year, month
     ORDER BY year, month
   `;

@@ -17,6 +17,7 @@ export type SessionPayload = {
   sub: string; // user id
   role: UserRole;
   email: string;
+  name: string;
 };
 
 export async function hashPassword(plain: string): Promise<string> {
@@ -28,7 +29,7 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ role: payload.role, email: payload.email })
+  return new SignJWT({ role: payload.role, email: payload.email, name: payload.name })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -39,7 +40,12 @@ export async function signToken(payload: SessionPayload): Promise<string> {
 export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secret);
-    return { sub: payload.sub as string, role: payload.role as UserRole, email: payload.email as string };
+    return {
+      sub: payload.sub as string,
+      role: payload.role as UserRole,
+      email: payload.email as string,
+      name: (payload.name as string) ?? (payload.email as string),
+    };
   } catch {
     return null;
   }

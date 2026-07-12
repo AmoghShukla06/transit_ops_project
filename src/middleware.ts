@@ -28,7 +28,9 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Protect everything except Next internals, the auth API, and static assets.
+// Only guard pages here. API routes enforce their own auth (requireAccess/getSession, or a
+// Bearer token for external callers like /api/cron/reminders) and must return JSON errors
+// instead of an HTML redirect, so the whole /api/* prefix is excluded.
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg)).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg)).*)"],
 };

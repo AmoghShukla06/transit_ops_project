@@ -11,18 +11,20 @@ import {
   topCostliestVehicles,
   monthlyRevenue,
   totalOperationalCost,
+  vehicleRoiList,
 } from "@/server/services/cost";
 
 export async function GET() {
   const guard = await requireAccess("analytics", "view");
   if (guard instanceof NextResponse) return guard;
 
-  const [utilization, efficiency, costliest, revenue, opCost] = await Promise.all([
+  const [utilization, efficiency, costliest, revenue, opCost, roi] = await Promise.all([
     fleetUtilization(),
     fuelEfficiency(),
     topCostliestVehicles(5),
     monthlyRevenue(6),
     totalOperationalCost(),
+    vehicleRoiList(),
   ]);
 
   return NextResponse.json({
@@ -32,5 +34,6 @@ export async function GET() {
     operationalCost: opCost,
     monthlyRevenue: revenue,
     topCostliestVehicles: costliest,
+    vehicleRoi: roi,
   });
 }

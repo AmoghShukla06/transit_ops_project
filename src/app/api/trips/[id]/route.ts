@@ -26,6 +26,7 @@ export async function POST(req: Request, { params }: Ctx) {
             finalOdometer: Number(body.finalOdometer),
             fuelConsumed: Number(body.fuelConsumed),
             fuelCost: body.fuelCost ? Number(body.fuelCost) : undefined,
+            revenue: body.revenue ? Number(body.revenue) : undefined,
           }),
         );
       case "cancel":

@@ -88,6 +88,7 @@ export default function TripsPage() {
         finalOdometer: Number(fd.get("finalOdometer")),
         fuelConsumed: Number(fd.get("fuelConsumed")),
         fuelCost: Number(fd.get("fuelCost")),
+        revenue: Number(fd.get("revenue") || 0),
       }
     });
   };
@@ -227,6 +228,10 @@ export default function TripsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Fuel Cost</label>
               <Input name="fuelCost" type="number" required step="0.01" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Trip Revenue</label>
+              <Input name="revenue" type="number" step="0.01" placeholder="0" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCompleteTripId(null)}>Cancel</Button>

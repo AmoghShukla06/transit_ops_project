@@ -35,12 +35,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ detail: "Invalid credentials" }, { status: 401 });
   }
 
-  // Reset counters on success.
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { failedAttempts: 0, lockedUntil: null },
-  });
+  // Reset counters on success — but only touch the DB if there's actually something to clear,
+  // so the common (clean) login path is a single query instead of two.
+  if (user.failedAttempts !== 0 || user.lockedUntil) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedAttempts: 0, lockedUntil: null },
+    });
+  }
 
-  await setSession({ sub: String(user.id), role: user.role, email: user.email });
+  await setSession({ sub: String(user.id), role: user.role, email: user.email, name: user.name });
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });
 }
