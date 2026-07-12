@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { can, type Module } from "@/lib/rbac";
 import { Sidebar, type NavItem } from "./_components/sidebar";
+import { MobileSidebar } from "./_components/mobile-sidebar";
 import { ModeToggle } from "./_components/mode-toggle";
 import { UserMenu } from "./_components/user-menu";
+import { PageTransition } from "./_components/page-transition";
 
 // Nav item + the RBAC module gating its visibility (null = visible to all authenticated users).
 const NAV: { href: string; label: string; module: Module | null }[] = [
@@ -23,25 +24,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const session = await getSession();
   if (!session) redirect("/login"); // middleware also guards, but this narrows the type
 
-  const user = await prisma.user.findUnique({
-    where: { id: Number(session.sub) },
-    select: { name: true, role: true },
-  });
-  if (!user) redirect("/login");
-
+  // Everything the shell needs (name + role) lives in the JWT, so rendering the dashboard
+  // chrome costs zero database round-trips on every navigation.
   const items: NavItem[] = NAV.filter(
-    (item) => item.module === null || can(user.role, item.module, "view"),
+    (item) => item.module === null || can(session.role, item.module, "view"),
   ).map(({ href, label }) => ({ href, label }));
 
   return (
     <div className="flex min-h-screen">
       <Sidebar items={items} />
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-end gap-3 border-b px-6">
-          <ModeToggle />
-          <UserMenu name={user.name} role={user.role} />
+        <header className="flex h-16 items-center justify-between gap-3 border-b bg-card/40 px-4 sm:px-6">
+          <MobileSidebar items={items} />
+          <span className="text-lg font-bold tracking-tight md:hidden">TransitOps</span>
+          <div className="flex items-center gap-3">
+            <ModeToggle />
+            <UserMenu name={session.name} role={session.role} />
+          </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
     </div>
   );

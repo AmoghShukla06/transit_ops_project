@@ -26,6 +26,6 @@ export async function POST(req: Request) {
     data: { name, email, passwordHash: await hashPassword(password), role },
   });
 
-  await setSession({ sub: String(user.id), role: user.role, email: user.email });
+  await setSession({ sub: String(user.id), role: user.role, email: user.email, name: user.name });
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });
 }

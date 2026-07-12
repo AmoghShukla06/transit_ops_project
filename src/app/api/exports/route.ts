@@ -13,6 +13,7 @@ import {
   fuelEfficiency,
   topCostliestVehicles,
   monthlyRevenue,
+  vehicleRoiList,
 } from "@/server/services/cost";
 
 type ReportType = "vehicles" | "trips" | "fuel" | "expenses" | "analytics";
@@ -93,12 +94,13 @@ async function fetchReportData(report: ReportType) {
       };
 
     case "analytics": {
-      const [opCost, util, eff, costliest, revenue] = await Promise.all([
+      const [opCost, util, eff, costliest, revenue, roi] = await Promise.all([
         totalOperationalCost(),
         fleetUtilization(),
         fuelEfficiency(),
         topCostliestVehicles(10),
         monthlyRevenue(12),
+        vehicleRoiList(),
       ]);
       const summaryRows = [
         { Metric: "Fleet Utilization", Value: `${util}%` },
@@ -119,11 +121,24 @@ async function fetchReportData(report: ReportType) {
         "Maint Cost": v.maintCost,
         "Total Cost": v.total,
       }));
+      const roiRows = roi.map((v) => ({
+        "Reg No": v.regNo,
+        "Name": v.nameModel,
+        Revenue: v.revenue,
+        "Op. Cost": v.operationalCost,
+        "Acq. Cost": v.acquisitionCost,
+        "ROI %": v.roi,
+      }));
       // Combine into CSV sections via papaparse (flat for CSV; structured for PDF)
       return {
         title: "Analytics Summary Report",
         rows: summaryRows,
-        sections: { summary: summaryRows, monthlyRevenue: revenueRows, topCostliest: costRows },
+        sections: {
+          summary: summaryRows,
+          monthlyRevenue: revenueRows,
+          topCostliest: costRows,
+          vehicleRoi: roiRows,
+        },
       };
     }
     default:

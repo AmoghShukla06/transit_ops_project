@@ -17,6 +17,9 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 
 // --------------- Types ---------------
 
@@ -32,6 +35,15 @@ interface AnalyticsData {
     fuelCost: number;
     maintCost: number;
     total: number;
+  }[];
+  vehicleRoi: {
+    vehicleId: number;
+    regNo: string;
+    nameModel: string;
+    revenue: number;
+    operationalCost: number;
+    acquisitionCost: number;
+    roi: number;
   }[];
 }
 
@@ -228,6 +240,48 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ---------- Vehicle ROI ---------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Vehicle ROI</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(data?.vehicleRoi ?? []).length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No vehicles yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Revenue</TableHead>
+                  <TableHead>Operational Cost</TableHead>
+                  <TableHead>Acquisition Cost</TableHead>
+                  <TableHead className="text-right">ROI</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(data?.vehicleRoi ?? []).map((v) => (
+                  <TableRow key={v.vehicleId}>
+                    <TableCell className="font-medium">
+                      {v.regNo}
+                      <div className="text-xs text-muted-foreground">{v.nameModel}</div>
+                    </TableCell>
+                    <TableCell>{fmt(v.revenue)}</TableCell>
+                    <TableCell>{fmt(v.operationalCost)}</TableCell>
+                    <TableCell>{fmt(v.acquisitionCost)}</TableCell>
+                    <TableCell
+                      className={`text-right font-medium ${v.roi >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                    >
+                      {v.roi}%
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

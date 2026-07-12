@@ -72,6 +72,16 @@ export default function DashboardPage() {
               <SelectItem value="Car">Car</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="available">Available</SelectItem>
+              <SelectItem value="on_trip">On Trip</SelectItem>
+              <SelectItem value="in_shop">In Shop</SelectItem>
+              <SelectItem value="retired">Retired</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -79,19 +89,22 @@ export default function DashboardPage() {
         <div className="text-center py-4 text-muted-foreground">Loading KPIs...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Fleet Utilization</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpis?.fleetUtilization ?? 0}%</div>
               <div className="w-full bg-secondary h-2 mt-2 rounded-full overflow-hidden">
-                <div className="bg-primary h-full" style={{ width: `${kpis?.fleetUtilization ?? 0}%` }} />
+                <div
+                  className="bg-primary h-full transition-[width] duration-700 ease-out"
+                  style={{ width: `${kpis?.fleetUtilization ?? 0}%` }}
+                />
               </div>
             </CardContent>
           </Card>
-          
-          <Card>
+
+          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 ease-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Trips</CardTitle>
             </CardHeader>
@@ -100,8 +113,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">{kpis?.pendingTrips ?? 0} pending drafts</p>
             </CardContent>
           </Card>
-          
-          <Card>
+
+          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 ease-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Vehicle Status</CardTitle>
             </CardHeader>
@@ -110,8 +123,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">{kpis?.availableVehicles ?? 0} available, {kpis?.vehiclesInMaintenance ?? 0} in shop</p>
             </CardContent>
           </Card>
-          
-          <Card>
+
+          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 ease-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Drivers on Duty</CardTitle>
             </CardHeader>

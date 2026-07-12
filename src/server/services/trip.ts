@@ -61,7 +61,7 @@ export async function dispatchTrip(tripId: number) {
  */
 export async function completeTrip(
   tripId: number,
-  input: { finalOdometer: number; fuelConsumed: number; fuelCost?: number },
+  input: { finalOdometer: number; fuelConsumed: number; fuelCost?: number; revenue?: number },
 ) {
   return prisma.$transaction(async (tx) => {
     const trip = await tx.trip.findUnique({ where: { id: tripId } });
@@ -90,6 +90,7 @@ export async function completeTrip(
         status: "completed",
         finalOdometer: input.finalOdometer,
         fuelConsumed: input.fuelConsumed,
+        revenue: input.revenue ?? 0,
       },
     });
   });
