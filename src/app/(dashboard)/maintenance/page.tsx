@@ -1,258 +1,278 @@
 /**
- * Maintenance (mockup #5, PDF §3.6). Owner: Person B.
- * "Log Service Record" form + service log table. Creating an active record flips the
- * vehicle to In Shop (hidden from dispatch); closing restores it to Available.
+ * Maintenance Workflow (mockup #5). Owner: Person B.
+ * "Log Service Record" form + service log table with close action.
+ * Fetch GET /api/maintenance; create POST /api/maintenance; close PATCH /api/maintenance/[id].
  */
 "use client";
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Wrench } from "lucide-react";
-import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface Vehicle {
-  id: number;
-  regNo: string;
-  nameModel: string;
-  status: string;
-}
+type MaintenanceStatus = "active" | "closed";
 
-interface MaintenanceLog {
+type MaintenanceLog = {
   id: number;
   serviceType: string;
   cost: number;
   date: string;
-  status: "active" | "closed";
+  status: MaintenanceStatus;
   vehicleId: number;
   vehicle: { regNo: string; nameModel: string };
-}
+};
 
-const schema = z.object({
-  vehicleId: z.string().min(1, "Select a vehicle"),
-  serviceType: z.string().min(1, "Service type is required"),
-  cost: z.coerce.number().min(0, "Must be ≥ 0"),
-  date: z.string().optional(),
-});
-type FormValues = z.input<typeof schema>;
+type Vehicle = {
+  id: number;
+  regNo: string;
+  nameModel: string;
+  status: string;
+};
+
+const emptyForm = {
+  vehicleId: "",
+  serviceType: "",
+  cost: "",
+  date: "",
+};
 
 export default function MaintenancePage() {
-  const qc = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState(emptyForm);
+  const [closingId, setClosingId] = useState<number | null>(null);
 
-  const { data: logs = [], isLoading } = useQuery<MaintenanceLog[]>({
+  const { data: logs, isLoading: logsLoading } = useQuery<MaintenanceLog[]>({
     queryKey: ["maintenance"],
-    queryFn: () => api("/maintenance"),
+    queryFn: async () => {
+      const res = await fetch("/api/maintenance");
+      if (!res.ok) throw new Error("Failed to load maintenance logs");
+      return res.json();
+    },
   });
 
-  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+  const { data: vehicles } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
-    queryFn: () => api("/vehicles"),
-  });
-
-  // Any vehicle not already on a trip can go in for service (retired vehicles included,
-  // since the service layer keeps retired vehicles retired rather than flipping to in_shop).
-  const eligibleVehicles = vehicles.filter((v) => v.status !== "on_trip");
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { vehicleId: "", serviceType: "", cost: 0, date: "" },
+    queryFn: async () => {
+      const res = await fetch("/api/vehicles");
+      if (!res.ok) throw new Error("Failed to load vehicles");
+      return res.json();
+    },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: FormValues) => {
-      const parsed = schema.parse(data);
-      return api("/maintenance", {
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await fetch("/api/maintenance", {
         method: "POST",
-        body: JSON.stringify({
-          vehicleId: Number(parsed.vehicleId),
-          serviceType: parsed.serviceType,
-          cost: parsed.cost,
-          date: parsed.date ? new Date(parsed.date).toISOString() : undefined,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to log service record");
+      return data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["maintenance"] });
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
-      toast.success("Service record logged — vehicle moved to In Shop");
-      form.reset();
-      setIsDialogOpen(false);
+      toast.success("Service record logged — vehicle marked In Shop");
+      queryClient.invalidateQueries({ queryKey: ["maintenance"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      setForm(emptyForm);
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const closeMutation = useMutation({
-    mutationFn: (id: number) =>
-      api(`/maintenance/${id}`, { method: "PATCH", body: JSON.stringify({ action: "close" }) }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["maintenance"] });
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
-      toast.success("Maintenance closed — vehicle restored to Available");
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/maintenance/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "close" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to close maintenance record");
+      return data;
     },
-    onError: (err: Error) => toast.error(err.message),
+    onSuccess: () => {
+      toast.success("Service closed — vehicle back to Available");
+      queryClient.invalidateQueries({ queryKey: ["maintenance"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setClosingId(null),
   });
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-  const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  function handleSubmit() {
+    if (!form.vehicleId || !form.serviceType || !form.cost) {
+      toast.error("Vehicle, service type, and cost are required");
+      return;
+    }
+    createMutation.mutate({
+      vehicleId: Number(form.vehicleId),
+      serviceType: form.serviceType,
+      cost: Number(form.cost),
+      date: form.date || undefined,
+    });
+  }
 
-  const activeCount = logs.filter((l) => l.status === "active").length;
-  const totalCost = logs.reduce((s, l) => s + l.cost, 0);
+  function handleClose(id: number) {
+    setClosingId(id);
+    closeMutation.mutate(id);
+  }
+
+  const activeCount = (logs ?? []).filter((l) => l.status === "active").length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Maintenance</h1>
-          <p className="text-sm text-muted-foreground">Log service records and track vehicles in the shop.</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) form.reset(); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-1 h-4 w-4" /> Log Service Record</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Log Service Record</DialogTitle></DialogHeader>
-            <form onSubmit={form.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Vehicle</Label>
-                <Select onValueChange={(v) => form.setValue("vehicleId", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
-                  <SelectContent>
-                    {eligibleVehicles.map((v) => (
-                      <SelectItem key={v.id} value={v.id.toString()}>
+      <div>
+        <h1 className="text-2xl font-semibold">Maintenance</h1>
+        <p className="text-sm text-muted-foreground">
+          {logsLoading ? "Loading…" : `${activeCount} vehicle(s) currently in shop`}
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Log Service Record</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <Field label="Vehicle">
+              <Select
+                value={form.vehicleId}
+                onValueChange={(val) => setForm((f) => ({ ...f, vehicleId: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(vehicles ?? [])
+                    .filter((v) => v.status !== "retired")
+                    .map((v) => (
+                      <SelectItem key={v.id} value={String(v.id)}>
                         {v.regNo} — {v.nameModel}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.vehicleId && (
-                  <p className="text-xs text-destructive">{form.formState.errors.vehicleId.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Service Type</Label>
-                <Input {...form.register("serviceType")} placeholder="Oil Change, Engine Repair..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Cost</Label>
-                <Input type="number" {...form.register("cost")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Date</Label>
-                <Input type="date" {...form.register("date")} />
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending} className="w-full">
-                  {createMutation.isPending ? "Saving…" : "Save"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Service Type">
+              <Input
+                value={form.serviceType}
+                onChange={(e) => setForm((f) => ({ ...f, serviceType: e.target.value }))}
+                placeholder="Oil Change, Engine Repair…"
+              />
+            </Field>
+            <Field label="Cost">
+              <Input
+                type="number"
+                value={form.cost}
+                onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
+                placeholder="1500"
+              />
+            </Field>
+            <Field label="Date (optional)">
+              <Input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </Field>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Logging…" : "Log Service Record"}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Logging a record marks the vehicle as In Shop and hides it from dispatch until closed.
+          </p>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Vehicles In Shop</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCount}</div>
-            <p className="text-xs text-muted-foreground">Active maintenance records</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Maintenance Cost</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalCost)}</div>
-            <p className="text-xs text-muted-foreground">{logs.length} records total</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="rounded-md border bg-card">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Vehicle</TableHead>
-              <TableHead>Service</TableHead>
+              <TableHead>Service Type</TableHead>
               <TableHead>Cost</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center">Loading…</TableCell></TableRow>
-            ) : logs.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No service records yet.</TableCell></TableRow>
-            ) : (
-              logs.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium">
-                    {l.vehicle.regNo}
-                    <div className="text-xs text-muted-foreground">{l.vehicle.nameModel}</div>
-                  </TableCell>
-                  <TableCell>{l.serviceType}</TableCell>
-                  <TableCell>{fmt(l.cost)}</TableCell>
-                  <TableCell>{fmtDate(l.date)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        l.status === "active"
-                          ? "bg-orange-500/10 text-orange-500"
-                          : "bg-green-500/10 text-green-500"
-                      }
-                    >
-                      {l.status === "active" ? "In Shop" : "Completed"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {l.status === "active" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={closeMutation.isPending}
-                        onClick={() => closeMutation.mutate(l.id)}
-                      >
-                        Close
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
+            {logsLoading && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             )}
+            {!logsLoading && (logs ?? []).length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  No service records yet.
+                </TableCell>
+              </TableRow>
+            )}
+            {(logs ?? []).map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="font-medium">
+                  {log.vehicle.regNo} — {log.vehicle.nameModel}
+                </TableCell>
+                <TableCell>{log.serviceType}</TableCell>
+                <TableCell>₹{log.cost.toLocaleString()}</TableCell>
+                <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <Badge variant={log.status === "active" ? "secondary" : "outline"}>
+                    {log.status === "active" ? "Active" : "Closed"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {log.status === "active" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleClose(log.id)}
+                      disabled={closingId === log.id}
+                    >
+                      {closingId === log.id ? "Closing…" : "Close"}
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
 
-      <p className="text-xs text-muted-foreground">
-        Note: In Shop vehicles are removed from the Trip Dispatcher&apos;s selection pool.
-      </p>
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium">{label}</label>
+      {children}
     </div>
   );
 }
