@@ -4,46 +4,49 @@
 
 @layer base {
   :root {
-    /* Light mode: soft cool-white surface, slate ink, single indigo accent. */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 95%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 20% 93%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 20% 89%;
-    --input: 214 20% 89%;
-    --ring: 243 75% 59%;
-    --radius: 0.6rem;
+    /* shadcn/ui default theme (ui.shadcn.com), copied verbatim. */
+    --radius: 0.625rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0% 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0% 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0% 0 0);
+    --primary: oklch(0% 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.97 0.01 17);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
   }
 
   .dark {
-    /* Dark mode: deep slate-navy (not pure black) with a brighter indigo accent. */
-    --background: 224 39% 7%;
-    --foreground: 210 20% 96%;
-    --card: 222 35% 10%;
-    --card-foreground: 210 20% 96%;
-    --primary: 239 84% 70%;
-    --primary-foreground: 224 39% 7%;
-    --secondary: 217 28% 16%;
-    --secondary-foreground: 210 20% 96%;
-    --muted: 217 28% 16%;
-    --muted-foreground: 215 16% 63%;
-    --accent: 217 28% 17%;
-    --accent-foreground: 210 20% 96%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 210 20% 96%;
-    --border: 217 28% 18%;
-    --input: 217 28% 18%;
-    --ring: 239 84% 70%;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.371 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.58 0.22 27);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
   }
 }
 
@@ -68,14 +71,14 @@
   }
 
   ::selection {
-    background-color: hsl(var(--primary) / 0.18);
-    color: hsl(var(--foreground));
+    background-color: color-mix(in oklch, var(--primary) 18%, transparent);
+    color: var(--foreground);
   }
 
   /* Minimal, thin scrollbars that follow the theme instead of the browser default. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -88,14 +91,14 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.3);
+    background-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
     border-radius: 9999px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.5);
+    background-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
     background-clip: content-box;
   }
 }

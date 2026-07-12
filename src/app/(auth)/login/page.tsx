@@ -69,7 +69,7 @@ export default function LoginPage() {
       {/* Brand panel */}
       <div className="hidden w-[38%] flex-col justify-between bg-muted p-10 lg:flex">
         <div>
-          <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="mb-6 h-14 w-auto" />
+          <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="mb-6 h-14 w-auto" />
           <h1 className="text-2xl font-bold tracking-tight">TransitOps</h1>
           <p className="mt-1 text-sm text-muted-foreground">Smart Transport Operations Platform</p>
         </div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center bg-muted/30 p-6">
         <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
           <div className="mb-6 flex items-center gap-2 lg:hidden">
-            <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
+            <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
             <span className="text-xl font-bold tracking-tight text-primary">TransitOps</span>
           </div>
           <h2 className="text-xl font-semibold">Sign in to your account</h2>

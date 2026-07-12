@@ -195,14 +195,14 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={revenueChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                  <XAxis dataKey="name" className="text-xs" tick={{ fill: "var(--muted-foreground)" }} />
+                  <YAxis className="text-xs" tick={{ fill: "var(--muted-foreground)" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "var(--radius)",
-                      color: "hsl(var(--card-foreground))",
+                      color: "var(--card-foreground)",
                     }}
                     formatter={(value: number) => fmt(value)}
                   />
@@ -227,14 +227,14 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={costChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                  <XAxis dataKey="name" className="text-xs" tick={{ fill: "var(--muted-foreground)" }} />
+                  <YAxis className="text-xs" tick={{ fill: "var(--muted-foreground)" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "var(--radius)",
-                      color: "hsl(var(--card-foreground))",
+                      color: "var(--card-foreground)",
                     }}
                     formatter={(value: number) => fmt(value)}
                   />

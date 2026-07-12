@@ -63,7 +63,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
         <CardHeader>
           <div className="mb-1 flex items-center gap-2">
-            <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
+            <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="h-7 w-auto" />
             <span className="text-xl font-bold tracking-tight text-primary">TransitOps</span>
           </div>
           <CardTitle>Create your account</CardTitle>

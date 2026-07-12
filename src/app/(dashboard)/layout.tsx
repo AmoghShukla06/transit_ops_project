@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <header className="flex h-16 items-center gap-3 border-b bg-card/40 px-4 sm:px-6">
           <div className="flex items-center gap-2 md:hidden">
             <MobileSidebar items={items} />
-            <Image src="/logo.png" alt="TransitOps" width={306} height={262} className="h-6 w-auto" />
+            <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="h-6 w-auto" />
             <span className="text-lg font-bold tracking-tight">TransitOps</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
