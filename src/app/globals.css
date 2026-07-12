@@ -4,49 +4,52 @@
 
 @layer base {
   :root {
-    /* shadcn/ui default theme (ui.shadcn.com), copied verbatim. */
+    /* Professional theme: neutral canvas with a cool undertone + one confident
+       blue accent (standard for fleet/logistics SaaS — reads trustworthy, not flashy). */
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0% 0 0);
+    --background: oklch(0.99 0.002 260);
+    --foreground: oklch(0.15 0.02 260);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0% 0 0);
+    --card-foreground: oklch(0.15 0.02 260);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0% 0 0);
-    --primary: oklch(0% 0 0);
+    --popover-foreground: oklch(0.15 0.02 260);
+    --primary: oklch(0.52 0.18 260);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.96 0.006 260);
+    --secondary-foreground: oklch(0.21 0.02 260);
+    --muted: oklch(0.96 0.006 260);
+    --muted-foreground: oklch(0.52 0.02 260);
+    --accent: oklch(0.95 0.014 260);
+    --accent-foreground: oklch(0.21 0.02 260);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.97 0.01 17);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.91 0.006 260);
+    --input: oklch(0.91 0.006 260);
+    --ring: oklch(0.52 0.18 260);
   }
 
   .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.371 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    /* Deep cool navy-black (not pure black) — premium feel, plus a brighter
+       blue accent tuned for contrast against the dark surface. */
+    --background: oklch(0.16 0.014 260);
+    --foreground: oklch(0.97 0.004 260);
+    --card: oklch(0.21 0.016 260);
+    --card-foreground: oklch(0.97 0.004 260);
+    --popover: oklch(0.21 0.016 260);
+    --popover-foreground: oklch(0.97 0.004 260);
+    --primary: oklch(0.68 0.16 260);
+    --primary-foreground: oklch(0.16 0.02 260);
+    --secondary: oklch(0.27 0.018 260);
+    --secondary-foreground: oklch(0.97 0.004 260);
+    --muted: oklch(0.27 0.018 260);
+    --muted-foreground: oklch(0.68 0.014 260);
+    --accent: oklch(0.3 0.022 260);
+    --accent-foreground: oklch(0.97 0.004 260);
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(0.58 0.22 27);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --ring: oklch(0.68 0.16 260);
   }
 }
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { ROLES } from "@/lib/roles";
+import { GoogleIcon } from "@/components/icons/google-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,12 +19,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ROLES = [
-  { value: "fleet_manager", label: "Fleet Manager" },
-  { value: "dispatcher", label: "Dispatcher" },
-  { value: "safety_officer", label: "Safety Officer" },
-  { value: "financial_analyst", label: "Financial Analyst" },
-] as const;
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  google_not_configured: "Google Sign-In isn't configured yet.",
+  google_failed: "Google Sign-In failed. Please try again.",
+  google_email_unverified: "Your Google account's email isn't verified.",
+  google_expired: "Your Google sign-in session expired. Please try again.",
+};
+
+/** Surfaces ?error= from a failed Google redirect as a toast. Isolated in its own
+ * component + Suspense boundary so useSearchParams() doesn't force the whole page dynamic. */
+function GoogleErrorToast() {
+  const params = useSearchParams();
+  useEffect(() => {
+    const error = params.get("error");
+    if (!error) return;
+    toast.error(GOOGLE_ERROR_MESSAGES[error] ?? "Something went wrong with Google Sign-In.");
+  }, [params]);
+  return null;
+}
 
 /**
  * Login screen (mockup #0) — split brand/form layout with a Role (RBAC) selector.
@@ -66,27 +80,34 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Brand panel */}
-      <div className="hidden w-[38%] flex-col justify-between bg-muted p-10 lg:flex">
+      <Suspense fallback={null}>
+        <GoogleErrorToast />
+      </Suspense>
+
+      {/* Brand panel — solid primary blue so it reads as unmistakably "on brand"
+          rather than blending into a neutral gray. */}
+      <div className="hidden w-[38%] flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
         <div>
-          <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="mb-6 h-14 w-auto" />
+          <div className="mb-6 inline-flex rounded-xl bg-primary-foreground/10 p-3">
+            <Image src="/logo.png?v=2" alt="TransitOps" width={306} height={262} className="h-11 w-auto" />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">TransitOps</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Smart Transport Operations Platform</p>
+          <p className="mt-1 text-sm text-primary-foreground/70">Smart Transport Operations Platform</p>
         </div>
 
         <div>
-          <p className="mb-3 text-sm font-medium">One login, four roles:</p>
-          <ul className="space-y-1.5 text-sm text-muted-foreground">
+          <p className="mb-3 text-sm font-medium text-primary-foreground/90">One login, four roles:</p>
+          <ul className="space-y-1.5 text-sm text-primary-foreground/70">
             {ROLES.map((r) => (
               <li key={r.value} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/60" />
                 {r.label}
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="text-xs text-muted-foreground">TransitOps © 2026 · RBAC Enabled</p>
+        <p className="text-xs text-primary-foreground/60">TransitOps © 2026 · RBAC Enabled</p>
       </div>
 
       {/* Form panel */}
@@ -164,8 +185,20 @@ export default function LoginPage() {
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign In"}
+            <Button type="submit" className="w-full" loading={loading}>
+              Sign In
+            </Button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase text-muted-foreground">Or continue with</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button variant="outline" className="w-full" asChild>
+              <a href="/api/auth/google/start">
+                <GoogleIcon className="h-4 w-4" /> Continue with Google
+              </a>
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">

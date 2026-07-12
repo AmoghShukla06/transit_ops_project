@@ -105,8 +105,8 @@ export default function SettingsPage() {
                 />
               </div>
               {canEdit ? (
-                <Button type="submit" disabled={save.isPending}>
-                  {save.isPending ? "Saving…" : "Save changes"}
+                <Button type="submit" loading={save.isPending}>
+                  Save changes
                 </Button>
               ) : (
                 <p className="text-sm text-muted-foreground">

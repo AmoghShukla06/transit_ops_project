@@ -155,7 +155,7 @@ export default function DriversPage() {
                   <Input type="number" {...form.register("safetyScore")} />
                 </div>
               </div>
-              <Button type="submit" disabled={saveMutation.isPending} className="w-full">Save</Button>
+              <Button type="submit" loading={saveMutation.isPending} className="w-full">Save</Button>
             </form>
           </DialogContent>
         </Dialog>

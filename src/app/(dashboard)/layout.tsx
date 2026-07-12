@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
           <div className="ml-auto flex items-center gap-3">
             <ModeToggle />
-            <UserMenu name={session.name} role={session.role} />
+            <UserMenu name={session.name} role={session.role} picture={session.picture} />
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">

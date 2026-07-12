@@ -25,6 +25,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ detail: "Account locked. Try again later." }, { status: 423 });
   }
 
+  // Google-only accounts have no password to check against.
+  if (!user.passwordHash) {
+    return NextResponse.json(
+      { detail: "This account uses Google Sign-In. Use the Google button below to log in." },
+      { status: 401 },
+    );
+  }
+
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
     const attempts = user.failedAttempts + 1;
@@ -49,7 +57,7 @@ export async function POST(req: Request) {
   }
 
   await setSession(
-    { sub: String(user.id), role: user.role, email: user.email, name: user.name },
+    { sub: String(user.id), role: user.role, email: user.email, name: user.name, picture: user.avatarUrl ?? undefined },
     rememberMe,
   );
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });

@@ -150,8 +150,8 @@ export default function MaintenancePage() {
                 <Label>Date</Label>
                 <Input type="date" {...form.register("date")} />
               </div>
-              <Button type="submit" disabled={createMutation.isPending} className="w-full">
-                {createMutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" loading={createMutation.isPending} className="w-full">
+                Save
               </Button>
             </form>
 
@@ -223,7 +223,7 @@ export default function MaintenancePage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={closeMutation.isPending}
+                            loading={closeMutation.isPending}
                             onClick={() => closeMutation.mutate(l.id)}
                           >
                             Close

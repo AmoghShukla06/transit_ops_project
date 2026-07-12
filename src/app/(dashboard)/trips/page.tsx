@@ -213,7 +213,8 @@ export default function TripsPage() {
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={createMutation.isPending || isOverCapacity}
+                  loading={createMutation.isPending}
+                  disabled={isOverCapacity}
                 >
                   {canDispatch ? "Create & Dispatch" : "Save Draft"}
                 </Button>
@@ -262,7 +263,7 @@ export default function TripsPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => actionMutation.mutate({ id: t.id, action: "dispatch" })}
-                          disabled={actionMutation.isPending}
+                          loading={actionMutation.isPending}
                         >
                           Dispatch
                         </Button>
@@ -274,6 +275,7 @@ export default function TripsPage() {
                             size="sm"
                             variant="destructive"
                             onClick={() => actionMutation.mutate({ id: t.id, action: "cancel" })}
+                            loading={actionMutation.isPending}
                           >
                             Cancel
                           </Button>
@@ -313,7 +315,7 @@ export default function TripsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCompleteTripId(null)}>Cancel</Button>
-              <Button type="submit" disabled={actionMutation.isPending}>Complete Trip</Button>
+              <Button type="submit" loading={actionMutation.isPending}>Complete Trip</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -220,8 +220,8 @@ export default function FuelExpensesPage() {
                   <Label htmlFor="fuel-date">Date (optional)</Label>
                   <Input id="fuel-date" type="date" {...fuelForm.register("date")} />
                 </div>
-                <Button type="submit" className="w-full" disabled={fuelMutation.isPending}>
-                  {fuelMutation.isPending ? "Saving…" : "Save Fuel Log"}
+                <Button type="submit" className="w-full" loading={fuelMutation.isPending}>
+                  Save Fuel Log
                 </Button>
               </form>
             </DialogContent>
@@ -270,8 +270,8 @@ export default function FuelExpensesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full" disabled={expenseMutation.isPending}>
-                  {expenseMutation.isPending ? "Saving…" : "Save Expense"}
+                <Button type="submit" className="w-full" loading={expenseMutation.isPending}>
+                  Save Expense
                 </Button>
               </form>
             </DialogContent>

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { ROLES } from "@/lib/roles";
+import { GoogleIcon } from "@/components/icons/google-icon";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,13 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const ROLES = [
-  { value: "fleet_manager", label: "Fleet Manager" },
-  { value: "dispatcher", label: "Dispatcher" },
-  { value: "safety_officer", label: "Safety Officer" },
-  { value: "financial_analyst", label: "Financial Analyst" },
-] as const;
 
 /** Signup screen — creates the account (and its RBAC role) then lands on the dashboard. */
 export default function SignupPage() {
@@ -117,9 +112,22 @@ export default function SignupPage() {
                 ✕ {error}
               </p>
             )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating…" : "Create account"}
+            <Button type="submit" className="w-full" loading={loading}>
+              Create account
             </Button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase text-muted-foreground">Or continue with</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button variant="outline" className="w-full" asChild>
+              <a href="/api/auth/google/start">
+                <GoogleIcon className="h-4 w-4" /> Continue with Google
+              </a>
+            </Button>
+
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link href="/login" className="font-medium text-foreground underline">

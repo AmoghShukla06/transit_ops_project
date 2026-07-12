@@ -60,15 +60,19 @@ model Setting {
 }
 
 model User {
-  id             Int       @id @default(autoincrement())
-  name           String
-  email          String    @unique
-  passwordHash   String
-  role           UserRole  @default(dispatcher)
-  // account lockout: lock after 5 failed attempts
+  id           Int     @id @default(autoincrement())
+  name         String
+  email        String  @unique
+  // Null for accounts created via "Continue with Google" — they have no password to check.
+  passwordHash String?
+  role         UserRole @default(dispatcher)
+  // account lockout: lock after 5 failed attempts (password login only; N/A for Google)
   failedAttempts Int       @default(0)
   lockedUntil    DateTime?
-  createdAt      DateTime  @default(now())
+  // Google OAuth link — the stable Google account id ("sub" claim) and profile photo.
+  googleId  String? @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
 }
 
 model Vehicle {

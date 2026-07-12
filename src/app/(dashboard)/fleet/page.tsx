@@ -227,8 +227,8 @@ export default function FleetPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={saveMutation.isPending} className="w-full">
-                  {saveMutation.isPending ? "Saving…" : "Save"}
+                <Button type="submit" loading={saveMutation.isPending} className="w-full">
+                  Save
                 </Button>
               </DialogFooter>
             </form>
@@ -339,7 +339,7 @@ export default function FleetPage() {
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs"
-                        disabled={uploadingId === v.id}
+                        loading={uploadingId === v.id}
                         onClick={() => {
                           setUploadingId(v.id);
                           fileInputRef.current?.setAttribute("data-vehicle-id", String(v.id));

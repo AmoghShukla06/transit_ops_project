@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatar } from "@/components/user-avatar";
 
 const ROLE_LABELS: Record<string, string> = {
   fleet_manager: "Fleet Manager",
@@ -14,16 +16,7 @@ const ROLE_LABELS: Record<string, string> = {
   financial_analyst: "Financial Analyst",
 };
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-export function UserMenu({ name, role }: { name: string; role: string }) {
+export function UserMenu({ name, role, picture }: { name: string; role: string; picture?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -39,17 +32,20 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="hidden text-right sm:block">
-        <div className="text-sm font-medium leading-tight">{name}</div>
-        <Badge variant="secondary" className="mt-0.5">
-          {ROLE_LABELS[role] ?? role}
-        </Badge>
-      </div>
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-        {initials(name)}
-      </div>
-      <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut} disabled={loading}>
+    <div className="flex items-center gap-2">
+      <Link
+        href="/profile"
+        className="flex items-center gap-3 rounded-lg py-1.5 pl-2.5 pr-1.5 transition-colors hover:bg-accent"
+      >
+        <div className="hidden text-right sm:block">
+          <div className="text-sm font-medium leading-tight">{name}</div>
+          <Badge variant="secondary" className="mt-1">
+            {ROLE_LABELS[role] ?? role}
+          </Badge>
+        </div>
+        <UserAvatar name={name} picture={picture} className="h-9 w-9 shrink-0 text-xs" />
+      </Link>
+      <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut} loading={loading}>
         <LogOut className="h-4 w-4" />
       </Button>
     </div>

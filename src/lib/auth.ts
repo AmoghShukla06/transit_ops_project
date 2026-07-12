@@ -18,6 +18,7 @@ export type SessionPayload = {
   role: UserRole;
   email: string;
   name: string;
+  picture?: string; // Google avatar URL, when the account signed in via Google
 };
 
 export async function hashPassword(plain: string): Promise<string> {
@@ -29,7 +30,12 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 }
 
 export async function signToken(payload: SessionPayload, expiresIn?: string): Promise<string> {
-  return new SignJWT({ role: payload.role, email: payload.email, name: payload.name })
+  return new SignJWT({
+    role: payload.role,
+    email: payload.email,
+    name: payload.name,
+    picture: payload.picture,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -45,6 +51,7 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
       role: payload.role as UserRole,
       email: payload.email as string,
       name: (payload.name as string) ?? (payload.email as string),
+      picture: payload.picture as string | undefined,
     };
   } catch {
     return null;
