@@ -40,7 +40,6 @@ transit_ops_project/
 │  ├─ server/services/    business rules — trip, maintenance, cost
 │  ├─ components/ui/       shadcn components
 │  └─ middleware.ts        redirects unauthenticated users to /login
-├─ build_plan.md          ⭐ 4-person task breakdown — READ THIS FIRST
 └─ .env.example           copy to .env (DATABASE_URL, JWT_SECRET, …)
 ```
 
