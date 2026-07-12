@@ -1,0 +1,40 @@
+# ---------- Secrets / env ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Node / Next.js ----------
+node_modules/
+.next/
+out/
+build/
+dist/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---------- Prisma ----------
+# generated client (regenerated via `prisma generate`)
+src/generated/
+prisma/*.db
+
+# ---------- Uploads (vehicle documents) ----------
+public/uploads/*
+!public/uploads/.gitkeep
+
+# ---------- Editor / OS ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# ---------- Misc / scratch ----------
+scratchpad/
+*.local
+
+# ---------- Internal docs ----------
+build_plan.md
