@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/lib/rbac";
 
@@ -13,13 +14,35 @@ export async function GET(_req: Request, { params }: Ctx) {
   return NextResponse.json(vehicle);
 }
 
+const patchSchema = z.object({
+  regNo: z.string().min(1).optional(),
+  nameModel: z.string().min(1).optional(),
+  type: z.string().min(1).optional(),
+  maxCapacityKg: z.number().positive().optional(),
+  odometer: z.number().min(0).optional(),
+  acquisitionCost: z.number().min(0).optional(),
+  status: z.enum(["available", "on_trip", "in_shop", "retired"]).optional(),
+  region: z.string().optional(),
+});
+
 export async function PATCH(req: Request, { params }: Ctx) {
   const guard = await requireAccess("fleet", "edit");
   if (guard instanceof NextResponse) return guard;
   const { id } = await params;
-  const data = await req.json();
-  // TODO(Person B): validate with zod; guard regNo uniqueness on change.
-  const vehicle = await prisma.vehicle.update({ where: { id: Number(id) }, data });
+  const vehicleId = Number(id);
+
+  const parsed = patchSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ detail: "Invalid input" }, { status: 400 });
+
+  // guard reg-no uniqueness on change (only checks if regNo is actually being updated)
+  if (parsed.data.regNo) {
+    const existing = await prisma.vehicle.findUnique({ where: { regNo: parsed.data.regNo } });
+    if (existing && existing.id !== vehicleId) {
+      return NextResponse.json({ detail: "Registration number already exists" }, { status: 409 });
+    }
+  }
+
+  const vehicle = await prisma.vehicle.update({ where: { id: vehicleId }, data: parsed.data });
   return NextResponse.json(vehicle);
 }
 
