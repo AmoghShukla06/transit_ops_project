@@ -1,99 +1,92 @@
 # TransitOps — Smart Transport Operations Platform
 
-End-to-end transport operations platform: vehicle registry, driver management, trip
-dispatching, maintenance, fuel & expense tracking, and analytics — with role-based access
-control and enforced business rules.
+A modern, comprehensive end-to-end transport operations platform designed to streamline fleet management. TransitOps handles everything from vehicle registries and driver management to trip dispatching, maintenance scheduling, and fuel expense tracking. 
 
-Built as a **single Next.js full-stack app** (frontend + API routes) with a local PostgreSQL
-database. **No FastAPI, no Supabase, no Firebase.**
+Built with enterprise-grade role-based access control (RBAC), robust business rules, and real-time analytics to ensure your operations run smoothly and securely.
 
-## Tech Stack
+---
 
-| Concern   | Technology |
-|-----------|-----------|
-| Framework | Next.js 15 (App Router, TypeScript) — UI **and** API (Route Handlers) |
-| UI        | shadcn/ui + TailwindCSS, TanStack Query, Recharts, next-themes (dark mode) |
-| Database  | PostgreSQL (installed locally) |
-| ORM       | Prisma |
-| Auth      | Self-hosted JWT in **httpOnly cookies** (`jose`) + bcrypt — no third-party auth |
-| Exports   | papaparse (CSV), pdf-lib (PDF) |
+## ✨ Features
 
-## Repository Layout
+- **Role-Based Access Control (RBAC):** Tailored dashboards and permissions for Fleet Managers, Dispatchers, Safety Officers, and Financial Analysts.
+- **Secure Authentication:** Self-hosted JWT authentication via `httpOnly` cookies, plus **Google OAuth** integration for quick access.
+- **Vehicle Registry:** Complete lifecycle management for your fleet including status tracking, odometer readings, and regional assignments.
+- **Driver Management:** Track driver licenses, safety scores, statuses, and automated daily email reminders for license renewals.
+- **Trip Dispatching:** Plan routes, assign vehicles/drivers, track distances, fuel consumption, and total revenue.
+- **Maintenance & Fuel Logs:** Log service repairs, track active/closed maintenance tickets, and monitor fuel expenses.
+- **Data Exporting:** Generate CSV exports (via `papaparse`) and PDF reports (via `pdf-lib`).
+- **Dark Mode Support:** Beautiful, fully responsive UI built with `shadcn/ui` and `next-themes`.
 
-```
-transit_ops_project/
-├─ prisma/
-│  ├─ schema.prisma       the 8 DB entities + enums (shared contract)
-│  └─ seed.ts             demo roles/users/vehicles/drivers
-├─ src/
-│  ├─ app/
-│  │  ├─ (auth)/          login, signup
-│  │  ├─ (dashboard)/     dashboard, fleet, drivers, trips, maintenance,
-│  │  │                   fuel-expenses, analytics, settings (+ shared layout)
-│  │  └─ api/             Route Handlers = the backend
-│  │     ├─ auth/         login, signup, logout, me   (✅ implemented)
-│  │     ├─ vehicles/     CRUD                          (✅ reference impl)
-│  │     ├─ trips/        lifecycle actions             (✅ wired to service)
-│  │     ├─ maintenance/  create/close                  (✅ wired to service)
-│  │     └─ drivers | fuel-logs | expenses | dashboard | analytics | exports | settings | cron
-│  ├─ lib/                prisma, auth (JWT/cookies), rbac, api client, utils
-│  ├─ server/services/    business rules — trip, maintenance, cost
-│  ├─ components/ui/       shadcn components
-│  └─ middleware.ts        redirects unauthenticated users to /login
-└─ .env.example           copy to .env (DATABASE_URL, JWT_SECRET, …)
-```
+---
 
-`✅` marks working reference implementations; everything else is a stubbed Route Handler /
-page with a `TODO(Person X)` pointing to its owner in `build_plan.md`.
+## 🛠 Tech Stack
 
-## Getting Started
+TransitOps is built as a **single Next.js full-stack application** (frontend + API routes).
 
-### 1. Set up PostgreSQL (installed locally)
-Install PostgreSQL 14+ ([download](https://www.postgresql.org/download/)), then create the
-database and user (defaults match `.env.example`):
-```sql
--- run in psql as a superuser
-CREATE USER transitops WITH PASSWORD 'transitops';
-CREATE DATABASE transitops OWNER transitops;
-```
-Confirm it's reachable at `localhost:5432` (adjust `DATABASE_URL` in `.env` if your
-port/credentials differ).
+| Category | Technology |
+|---|---|
+| **Framework** | [Next.js 15](https://nextjs.org/) (App Router, TypeScript) for both UI and API (Route Handlers) |
+| **Styling & UI** | [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/), [Recharts](https://recharts.org/) |
+| **State & Data** | [TanStack Query](https://tanstack.com/query/latest) |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) (Containerized via Docker) |
+| **ORM** | [Prisma](https://www.prisma.io/) |
+| **Auth** | Custom JWT (`jose`), `bcrypt`, & Google OAuth |
+| **Email Services** | `nodemailer` (SMTP) |
 
-### 2. Install + configure
+---
+
+## 🚀 Getting Started
+
+Follow these steps to build and run the application locally. 
+
+### Prerequisites
+- **Node.js** (v18 or higher)
+- **Docker** and **Docker Compose** (for running the database)
+
+### 1. Environment Variables
+Clone the repository and configure your environment:
 ```bash
-cp .env.example .env      # then set JWT_SECRET etc.
+cp .env.example .env
+```
+Open the `.env` file and fill in your secrets (especially `JWT_SECRET`, `CRON_SECRET`, and your `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`).
+
+### 2. Start the Database (Docker)
+TransitOps comes with a `docker-compose.yml` file to instantly spin up a local PostgreSQL instance.
+```bash
+# Start the database in the background
+docker compose up -d
+```
+*(The database will run on `localhost:5433` by default to avoid conflicts).*
+
+### 3. Install Dependencies & Setup DB
+Install the Node modules, push the schema to your new database, and seed the demo data.
+```bash
 npm install
+npm run db:push
+npm run db:seed
 ```
 
-### 3. Database
+### 4. Run the Development Server
 ```bash
-npm run db:generate       # generate Prisma client
-npm run db:migrate        # create tables (first run: name it "init")
-npm run db:seed           # demo data
+npm run dev
 ```
+Navigate to `http://localhost:3000` in your browser.
 
-### 4. Run
-```bash
-npm run dev               # http://localhost:3000
-```
+---
 
-### 5. shadcn/ui (once)
-```bash
-npx shadcn@latest init    # then: npx shadcn@latest add button card input table dialog select badge
-```
+## 🔑 Demo Logins
 
-## Demo Logins (after seeding)
+If you successfully ran `npm run db:seed`, your database is populated with sample vehicles, drivers, trips, and users.
 
-Password for all: `password123`
+**Default Password for all demo accounts:** `password123`
 
 | Role | Email |
-|------|-------|
-| Fleet Manager | fleet@transitops.in |
-| Dispatcher | dispatcher@transitops.in |
-| Safety Officer | safety@transitops.in |
-| Financial Analyst | finance@transitops.in |
+|---|---|
+| **Fleet Manager** | `fleet@transitops.in` |
+| **Dispatcher** | `dispatcher@transitops.in` |
+| **Safety Officer** | `safety@transitops.in` |
+| **Financial Analyst** | `finance@transitops.in` |
+| **Admin Setup** | `admin@transitops.in` |
+| **John Dispatch** | `john@transitops.in` |
 
-## Team
-
-Work is divided across 4 people in [`build_plan.md`](./build_plan.md). Read it before
-starting — it defines ownership, the shared foundation to build first, and the API contract.
+*(You can also use the **"Continue with Google"** button if you configured your OAuth credentials!)*
