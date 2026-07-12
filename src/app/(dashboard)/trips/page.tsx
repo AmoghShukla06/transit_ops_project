@@ -66,7 +66,7 @@ export default function TripsPage() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ id, action, payload }: { id: number, action: string, payload?: any }) => 
+    mutationFn: ({ id, action, payload }: { id: number, action: string, payload?: Record<string, unknown> }) =>
       api(`/trips/${id}`, { method: "POST", body: JSON.stringify({ action, ...payload }) }),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });
